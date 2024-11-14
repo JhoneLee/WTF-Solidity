@@ -58,6 +58,7 @@
    * 支持单继承和多继承，多继承排序是 辈分从高到低
    * 修饰器（modifier）也可以和方法一下被覆写
    * 覆写不可以修改参数类型和返回值，这点和java ts一致
+   * 当多个父合约（base contracts）具有相同的函数名和相同的参数类型时，子合约（derived contract）需要显式地覆写（override）这些方法，因为 Solidity 无法确定应该使用哪一个父合约的实现
  * 奇葩操作
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
