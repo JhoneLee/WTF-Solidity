@@ -70,6 +70,8 @@
      * 不能继承除接口外的其他合约
      * 所有函数都必须是external且不能有函数体
      * 继承接口的非抽象合约必须实现接口定义的所有功能
+   * 可以只知道一个合约地址，只要它满足某个接口的规范，就可以直接生成可调用的合约 `IERC721 BAYC = IERC721(0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D);` BAYC就可以直接当成合约被调用
+   * 重载也和其他主流面向对象语言规则一样
  * 异常处理
    * 有三个API  error  require  assert, 其中require和asset的第一个参数都是一个布尔判断表达式，成立就划过去，不成立就报错，require可以反馈报错原因，assert不可以
    * error 的定义类似事件/modifier, 必须搭配 revert关键字, revert 类似throw 
@@ -83,6 +85,13 @@
          _owners[tokenId] = newOwner;
      }
      ```
+ * 库
+   * solidity 用库合约封装一些算法、函数， 专门有library 关键字修饰库合约 `library Strings`
+   * solidity 本身没有包管理这个概念，需要把 library封装成单独的sol文件后，import进来。 如果用hardhat 就可以通过npm安装库合约包，然后再sol文件import
+   * 使用库的方法：`using <Library> for <Type>`  表示把这个库应用于这个类型，之后这个类型的数据就有这个库的方法可以用了. 如果这个库有针对多个类型的方法，就多写几次using for 类型
+   * 使用库的方法2： 直接 库.方法
+   * 可以导入库的形式： 本地文件路径、node_modules的类全局路径`import '@openzeppelin/contracts/access/Ownable.sol';` 、 github网址，精确到.sol文件级别
+   * 库中如果有很多合约很多接口，只想用其中一个或若干个，可以用 `import { Yeye,A,b } from './Yeye.sol'` 这一点和js一样
  * 奇葩操作
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
