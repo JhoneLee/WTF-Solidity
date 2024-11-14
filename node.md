@@ -70,6 +70,19 @@
      * 不能继承除接口外的其他合约
      * 所有函数都必须是external且不能有函数体
      * 继承接口的非抽象合约必须实现接口定义的所有功能
+ * 异常处理
+   * 有三个API  error  require  assert, 其中require和asset的第一个参数都是一个布尔判断表达式，成立就划过去，不成立就报错，require可以反馈报错原因，assert不可以
+   * error 的定义类似事件/modifier, 必须搭配 revert关键字, revert 类似throw 
+     ```solidity
+     error TransferNotOwner(address sender); // 自定义的带参数的error
+     function transferOwner1(uint256 tokenId, address newOwner) public {
+         if(_owners[tokenId] != msg.sender){
+             revert TransferNotOwner();
+             // revert TransferNotOwner(msg.sender);
+         }
+         _owners[tokenId] = newOwner;
+     }
+     ```
  * 奇葩操作
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
