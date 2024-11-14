@@ -59,6 +59,9 @@
    * 修饰器（modifier）也可以和方法一下被覆写
    * 覆写不可以修改参数类型和返回值，这点和java ts一致
    * 当多个父合约（base contracts）具有相同的函数名和相同的参数类型时，子合约（derived contract）需要显式地覆写（override）这些方法，因为 Solidity 无法确定应该使用哪一个父合约的实现
+   * 多继承时，override需要指明覆写的父合约，而且一个也不能落下 `function setScore() public override(Father,Father2) verifyOwner`
+   * 父合约如果自己的方法也覆写了爷爷合约的方法，需要给方法表明既是覆写也是可覆写 `function setScore() public virtual  override verifyOwner`
+   * 构造函数继承的时候，需要给父合约的构造函数也传值 ` constructor(uint8 inputAge, address owner) Father2(owner)` 自己的构造函数多加参数，然后扔给父合约
  * 奇葩操作
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
