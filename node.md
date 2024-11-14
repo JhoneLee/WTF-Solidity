@@ -96,3 +96,7 @@
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
    * constant 类似于vite 的import.env.meta ， immutable全新概念，表示只能在contructor中初始化完毕后就不能再改的变量，constant这种没有gas费，而immutable有但是比普通变量少
+ * 转账相关
+   * 在转账相关操作中solidity提供了两个钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
+   * 在ethers.js 里面用wallet.sendTransaction 单纯转账会触发 receive, 其余调合约中自己定义的转账方法或者直接调用fallback，都会触发fallback
+   * 这两个钩子函数里面可以执行一些逻辑，包括打印日志、记账等，也可以不定义他俩，顶多没有钩子函数转而用合约函数做上面的事有点膈应
