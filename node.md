@@ -62,6 +62,14 @@
    * 多继承时，override需要指明覆写的父合约，而且一个也不能落下 `function setScore() public override(Father,Father2) verifyOwner`
    * 父合约如果自己的方法也覆写了爷爷合约的方法，需要给方法表明既是覆写也是可覆写 `function setScore() public virtual  override verifyOwner`
    * 构造函数继承的时候，需要给父合约的构造函数也传值 ` constructor(uint8 inputAge, address owner) Father2(owner)` 自己的构造函数多加参数，然后扔给父合约
+   * 菱形/钻石继承是指一个子合约有两个或两个以上的父合约，也就是多重继承
+   * super.父合约函数名()  可以依次执行
+   * 也有[接口和抽象合约](https://github.com/JhoneLee/WTF-Solidity/blob/main/14_Interface/readme.md)的概念，接口定义如下`interface IERC721 is IERC165` 也可以继承
+     * 不能包含状态变量
+     * 不能包含构造函数
+     * 不能继承除接口外的其他合约
+     * 所有函数都必须是external且不能有函数体
+     * 继承接口的非抽象合约必须实现接口定义的所有功能
  * 奇葩操作
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
