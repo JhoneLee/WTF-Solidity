@@ -1,6 +1,7 @@
 # 笔记
 * remix:
   * 合约中定义了一个public 数组之后，部署的合约在调试时 array后面会有一个输入框，首先展示的蓝色属性按钮也是一个函数，是你定义public的getter方法； 其次对于数组来说需要你输入索引才能拿到值，而不是输出整个数组值；
+  * 左上角填写以太币金额的输入框不是部署的时候给设置金额初始值，是你在转账操作的时候的msg.value
 * 数据类型： 值类型 引用类型， 外加一个映射类型，类似于js里面的map
   * 值类型： bool、 address、 整型(int uint uint256)、 enum、 定长字节数组(bytes1~32数值表示长度)
     * uint后面可以接数字，表示你的数字范围，但是必须是8的整数倍 比如 uint8 uint16等， 后面的数字表示 1至2^n-1 的数字范围
@@ -96,6 +97,10 @@
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
    * constant 类似于vite 的import.env.meta ， immutable全新概念，表示只能在contructor中初始化完毕后就不能再改的变量，constant这种没有gas费，而immutable有但是比普通变量少
+ * 合约调合约(不是合约调library合约)
+   * 知道合约地址，用合约实例化后调用 `OtherContract(_Address).setX(x);`
+   * 函数参数接收一个合约变量，直接调用合约变量的方法 `function callGetX(OtherContract _Address) external view returns(uint x) {  x = _Address.getX(); }`
+   * 调用payable函数：`OtherContract(otherContract).setX{value: msg.value}(x);` x随便填
  * 转账相关
    * 在转账相关操作中solidity提供了两个**合约接收到eth**的钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
    * 在ethers.js 里面用wallet.sendTransaction 单纯转账会触发 receive, 其余调合约中自己定义的转账方法或者直接调用fallback，都会触发fallback
