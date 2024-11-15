@@ -103,12 +103,15 @@
    * 函数参数接收一个合约变量，直接调用合约变量的方法 `function callGetX(OtherContract _Address) external view returns(uint x) {  x = _Address.getX(); }`
    * 调用payable函数：`OtherContract(otherContract).setX{value: msg.value}(x);` x随便填
    * 用call 调合约方法： `合约地址.call{value: amount}(abi.encodeWithSignature(函数签名, 传给函数的参数));` 如果不涉及转账，就没有花括号及其内容；
+   * 用delegateCall 调合约方法： `合约地址.call(abi.encodeWithSignature(函数签名, 传给函数的参数));` 不支持传递eth, 所谓delegateCall就是把函数签名表示函数的逻辑拿过来，在执行逻辑时，读写的状态和上下文都是当前合约而不是代理合约的
+   * 合约工厂可以通过 `new 合约名(参数)`的方式创建新的合约，在拿到实例化的合约地址后保存起来，供对外取用，这种模式为合约工厂
  * 转账相关
    * 在转账相关操作中solidity提供了两个**合约接收到eth**的钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
    * 在ethers.js 里面用wallet.sendTransaction 单纯转账会触发 receive, 其余调合约中自己定义的转账方法或者直接调用fallback，都会触发fallback
    * 这两个钩子函数里面可以执行一些逻辑，包括打印日志、记账等，也可以不定义他俩，顶多没有钩子函数转而用合约函数做上面的事有点膈应
    * 给constructor定义成 payable的，能够支持在部署时转账 `constructor() payable{}`
    * revert关键字  会回滚整个交易的状态，并且撤销所有的操作。无论是成功还是失败的交易，revert 都会让以太币和任何状态变化恢复到交易前的状态。但是消耗过的gas费如果没有退还机制，默认就不退了
+   * `call{value:_value}()` 和 `new Contract{value:_value}()` 这种写法和转账eth有关，value就是eth的金额
    * payable的修饰范围
      * 修饰函数，表示函数可以接收eth
      * 修饰构造函数，表示在合约部署时可以接收eth
