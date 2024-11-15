@@ -98,6 +98,11 @@
    * delete 操作符：js里面是删除属性，这里是把状态给重置
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
    * constant 类似于vite 的import.env.meta ， immutable全新概念，表示只能在contructor中初始化完毕后就不能再改的变量，constant这种没有gas费，而immutable有但是比普通变量少
+   *  `call{value:_value}()` 和 `new Contract{value:_value}()` 这种写法叫附加参数，{}里面的key不能乱写，目前可知的是：
+     * value eth金额
+     * gas 最大支持的gas费
+     * salt CREATE2指令的盐值
+     * code CREATE2的指定合约字节码 
  * 合约调合约(不是合约调library合约)
    * 知道合约地址，用合约实例化后调用 `OtherContract(_Address).setX(x);`
    * 函数参数接收一个合约变量，直接调用合约变量的方法 `function callGetX(OtherContract _Address) external view returns(uint x) {  x = _Address.getX(); }`
@@ -111,7 +116,6 @@
    * 这两个钩子函数里面可以执行一些逻辑，包括打印日志、记账等，也可以不定义他俩，顶多没有钩子函数转而用合约函数做上面的事有点膈应
    * 给constructor定义成 payable的，能够支持在部署时转账 `constructor() payable{}`
    * revert关键字  会回滚整个交易的状态，并且撤销所有的操作。无论是成功还是失败的交易，revert 都会让以太币和任何状态变化恢复到交易前的状态。但是消耗过的gas费如果没有退还机制，默认就不退了
-   * `call{value:_value}()` 和 `new Contract{value:_value}()` 这种写法和转账eth有关，value就是eth的金额
    * payable的修饰范围
      * 修饰函数，表示函数可以接收eth
      * 修饰构造函数，表示在合约部署时可以接收eth
