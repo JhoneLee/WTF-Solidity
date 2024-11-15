@@ -74,7 +74,7 @@
    * 重载也和其他主流面向对象语言规则一样
  * 异常处理
    * 有三个API  error  require  assert, 其中require和asset的第一个参数都是一个布尔判断表达式，成立就划过去，不成立就报错，require可以反馈报错原因，assert不可以
-   * error 的定义类似事件/modifier, 必须搭配 revert关键字, revert 类似throw 
+   * error 的定义类似事件/modifier, 必须搭配 revert关键字, revert 类似throw , 但它不是一个普通关键字，表示**回滚当前交易**
      ```solidity
      error TransferNotOwner(address sender); // 自定义的带参数的error
      function transferOwner1(uint256 tokenId, address newOwner) public {
@@ -97,6 +97,38 @@
    * 只有数值变量可以声明constant和immutable；string和bytes可以声明为constant，但不能为immutable， 因为string 和 bytes的长度是动态变化的，与immutable设计初衷不符。
    * constant 类似于vite 的import.env.meta ， immutable全新概念，表示只能在contructor中初始化完毕后就不能再改的变量，constant这种没有gas费，而immutable有但是比普通变量少
  * 转账相关
-   * 在转账相关操作中solidity提供了两个钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
+   * 在转账相关操作中solidity提供了两个**合约接收到eth**的钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
    * 在ethers.js 里面用wallet.sendTransaction 单纯转账会触发 receive, 其余调合约中自己定义的转账方法或者直接调用fallback，都会触发fallback
    * 这两个钩子函数里面可以执行一些逻辑，包括打印日志、记账等，也可以不定义他俩，顶多没有钩子函数转而用合约函数做上面的事有点膈应
+   * 给constructor定义成 payable的，能够支持在部署时转账 `constructor() payable{}`
+   * revert关键字  会回滚整个交易的状态，并且撤销所有的操作。无论是成功还是失败的交易，revert 都会让以太币和任何状态变化恢复到交易前的状态。但是消耗过的gas费如果没有退还机制，默认就不退了
+   * payable的修饰范围
+     * 修饰函数，表示函数可以接收eth
+     * 修饰构造函数，表示在合约部署时可以接收eth
+     * 修饰address类型的函数参数或变量，表示合约可以给这个地址转账
+   * 三个从**合约转账给外部**的api: [transfer send call](https://github.com/JhoneLee/WTF-Solidity/blob/main/20_SendETH/readme.md) , 推荐用call
+     * transfer: 调用方式 `接收eth地址.transfer(金额)`  gas限制为2300，如果对方的receive和fallback太复杂导致消耗的gas超过2300，交易就失败了， 交易失败会自动回滚，但是仍然扣gas费，所以要预交易
+     * send: 调用方式 `接收方地址.send(发送ETH数额)` gas限制为2300 交易失败不回滚，需要自己抛出异常
+       ```solidity
+       error SendFailed(); // 用send发送ETH失败error
+       // send()发送ETH
+       function sendETH(address payable _to, uint256 amount) external payable{
+           // 处理下send的返回值，如果失败，revert交易并发送error
+           bool success = _to.send(amount);
+           if(!success){
+               revert SendFailed();
+           }
+       }
+       ```
+     * call: 当用于转账的时候调用方式是 `接收方地址.call{value: 发送ETH数额}(data)` data一般是空串， 只有用于调其他合约时才是其他合约的abi字符串，无gas限制，交易失败不回滚，需要自己手动回滚
+       ```solidity
+       error CallFailed(); // 用call发送ETH失败error
+       // call()发送ETH
+       function callETH(address payable _to, uint256 amount) external payable{
+           // 处理下call的返回值，如果失败，revert交易并发送error
+           (bool success,) = _to.call{value: amount}("");
+           if(!success){
+               revert CallFailed();
+           }
+       }
+       ``` 
