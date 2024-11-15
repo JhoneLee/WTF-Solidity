@@ -110,6 +110,7 @@
    * 用call 调合约方法： `合约地址.call{value: amount}(abi.encodeWithSignature(函数签名, 传给函数的参数));` 如果不涉及转账，就没有花括号及其内容；
    * 用delegateCall 调合约方法： `合约地址.call(abi.encodeWithSignature(函数签名, 传给函数的参数));` 不支持传递eth, 所谓delegateCall就是把函数签名表示函数的逻辑拿过来，在执行逻辑时，读写的状态和上下文都是当前合约而不是代理合约的
    * 合约工厂可以通过 `new 合约名(参数)`的方式创建新的合约，在拿到实例化的合约地址后保存起来，供对外取用，这种模式为合约工厂
+   * 直接new 合约的方式导致产生的合约地址是不可预测的，通过 `new Pair{salt:salt}(param)` 的方式用CREATE2指令创建合约，地址由salt决定。 所以只要salt固定，产生的地址就是不变的、可以通过计算公式预测出来的
  * 转账相关
    * 在转账相关操作中solidity提供了两个**合约接收到eth**的钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
    * 在ethers.js 里面用wallet.sendTransaction 单纯转账会触发 receive, 其余调合约中自己定义的转账方法或者直接调用fallback，都会触发fallback
