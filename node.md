@@ -46,6 +46,7 @@
    * 也支持结构式赋值，区别是js用{} solidity用 ()
    * this 引用方法表示外部调用，会消耗更多的gas， 只有在模拟外部调用、调用payable方法的时候才用，合约内自己调自己只需要使用方法名即可
    * 函数参数可以显性的设置引用类型（无论长度是否可变的数组、结构体、mapping）变量的存储位置, 取值范围为storage(最费gas,存在链上) memory(存内存 可变) calldata(存内存 不可变)
+   * **函数签名**格式是 `函数名(参数类型1, 参数类型2, ...)`
  * 事件
    * 事件的参数分为索引参数和普通参数，索引参数用来给监听事件的客户端过滤用的，最多只能有三个，一般都是地址或者字符串什么的 `event Transfer(address indexed from, address indexed to, uint256 value);`
    * 适合使用的场景
@@ -101,6 +102,7 @@
    * 知道合约地址，用合约实例化后调用 `OtherContract(_Address).setX(x);`
    * 函数参数接收一个合约变量，直接调用合约变量的方法 `function callGetX(OtherContract _Address) external view returns(uint x) {  x = _Address.getX(); }`
    * 调用payable函数：`OtherContract(otherContract).setX{value: msg.value}(x);` x随便填
+   * 用call 调合约方法： `合约地址.call{value: amount}(abi.encodeWithSignature(函数签名, 传给函数的参数));` 如果不涉及转账，就没有花括号及其内容；
  * 转账相关
    * 在转账相关操作中solidity提供了两个**合约接收到eth**的钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
    * 在ethers.js 里面用wallet.sendTransaction 单纯转账会触发 receive, 其余调合约中自己定义的转账方法或者直接调用fallback，都会触发fallback
