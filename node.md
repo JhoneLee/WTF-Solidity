@@ -2,6 +2,7 @@
 * 常识
   * EIP:是针对以太坊底层协议的改进建议, 涉及区块链协议的更改、核心功能的优化或新增，比如共识机制、虚拟机（EVM）改动、Gas 规则调整等。
   * ERC: 针对智能合约标准化的提案，定义了 应用层标准，特别是 token 和合约的接口规范
+  * 在以太坊中，数据必须编码成字节码才能和智能合约交互
 * remix:
   * 合约中定义了一个public 数组之后，部署的合约在调试时 array后面会有一个输入框，首先展示的蓝色属性按钮也是一个函数，是你定义public的getter方法； 其次对于数组来说需要你输入索引才能拿到值，而不是输出整个数组值；
   * 左上角填写以太币金额的输入框不是部署的时候给设置金额初始值，是你在转账操作的时候的msg.value
@@ -51,6 +52,15 @@
    * 函数参数可以显性的设置引用类型（无论长度是否可变的数组、结构体、mapping）变量的存储位置, 取值范围为storage(最费gas,存在链上) memory(存内存 可变) calldata(存内存 不可变)
    * **函数签名**格式是 `函数名(参数类型1, 参数类型2, ...)`
    * 函数选择器： `contract.函数名.selector` 用于生成函数ABI编码、 代理合约、 call 方法用
+   * abi全局变量:
+     * 生成abi: `abi.encode`  `abi.encodePacked` `abi.encodeWithSignature` `abi.encodeWithSelector` 均可生成函数的abi编码， 前两个用于编码函数的参数
+     * 编码参数需要结合bytes4 类型的函数选择器去生成整个函数调用的abi信息：
+       ```solidity
+       bytes4 funcSelector = bytes4(keccak256("setMessage(string)"));
+       bytes memory param = abi.encode(inputMsg);
+       bytes memory callfuncData = abi.encodePacked(funcSelector, param);
+       (bool success, bytes memory data) = contractAddr.call(callfuncData);
+       ```
  * 事件
    * 事件的参数分为索引参数和普通参数，索引参数用来给监听事件的客户端过滤用的，最多只能有三个，一般都是地址或者字符串什么的 `event Transfer(address indexed from, address indexed to, uint256 value);`
    * 适合使用的场景
@@ -116,6 +126,7 @@
    * 用delegateCall 调合约方法： `合约地址.call(abi.encodeWithSignature(函数签名, 传给函数的参数));` 不支持传递eth, 所谓delegateCall就是把函数签名表示函数的逻辑拿过来，在执行逻辑时，读写的状态和上下文都是当前合约而不是代理合约的
    * 合约工厂可以通过 `new 合约名(参数)`的方式创建新的合约，在拿到实例化的合约地址后保存起来，供对外取用，这种模式为合约工厂
    * 直接new 合约的方式导致产生的合约地址是不可预测的，通过 `new Pair{salt:salt}(param)` 的方式用CREATE2指令创建合约，地址由salt决定。 所以只要salt固定，产生的地址就是不变的、可以通过计算公式预测出来的
+   * staticcall 也可以调用合约方法，与call不同，staticcall 用于调不改变合约状态的函数，如果发生状态改变，会导致报错；
  * 转账相关
    * 在转账相关操作中solidity提供了两个**合约接收到eth**的钩子函数 receive 和 fallback， 当msg对象有data的时候触发 fallback，没有触发receive ， 如果没定义receive 也会尝试触发fallback
    * 在ethers.js 里面用wallet.sendTransaction 单纯转账会触发 receive, 其余调合约中自己定义的转账方法或者直接调用fallback，都会触发fallback
