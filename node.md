@@ -64,6 +64,7 @@
        ```
      * 通过反编译不开源合约可以得到函数的`method id`，可以通过函数签名计算得到 `bytes4(keccak256("mint(address)"))` , 通过abi encodeWithSelector 可以调用这个函数 `bytes memory data = abi.encodeWithSelector(bytes4(0x533ba33a)); address(contract).staticcall(data);`
      * abi.decode用于解码abi.encode生成的二进制编码，将它还原成原本的参数
+     * abi.encodePacked 将 encode 生成的编码进行压缩紧凑性处理，不能用于合约的调用，主要用于之后对其进行哈希计算（如 keccak256）来生成唯一标识符。
  * 事件
    * 事件的参数分为索引参数和普通参数，索引参数用来给监听事件的客户端过滤用的，最多只能有三个，一般都是地址或者字符串什么的 `event Transfer(address indexed from, address indexed to, uint256 value);`
    * 适合使用的场景
