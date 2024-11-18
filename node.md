@@ -1,4 +1,7 @@
 # 笔记
+* 常识
+  * EIP:是针对以太坊底层协议的改进建议, 涉及区块链协议的更改、核心功能的优化或新增，比如共识机制、虚拟机（EVM）改动、Gas 规则调整等。
+  * ERC: 针对智能合约标准化的提案，定义了 应用层标准，特别是 token 和合约的接口规范
 * remix:
   * 合约中定义了一个public 数组之后，部署的合约在调试时 array后面会有一个输入框，首先展示的蓝色属性按钮也是一个函数，是你定义public的getter方法； 其次对于数组来说需要你输入索引才能拿到值，而不是输出整个数组值；
   * 左上角填写以太币金额的输入框不是部署的时候给设置金额初始值，是你在转账操作的时候的msg.value
@@ -47,6 +50,7 @@
    * this 引用方法表示外部调用，会消耗更多的gas， 只有在模拟外部调用、调用payable方法的时候才用，合约内自己调自己只需要使用方法名即可
    * 函数参数可以显性的设置引用类型（无论长度是否可变的数组、结构体、mapping）变量的存储位置, 取值范围为storage(最费gas,存在链上) memory(存内存 可变) calldata(存内存 不可变)
    * **函数签名**格式是 `函数名(参数类型1, 参数类型2, ...)`
+   * 函数选择器： `contract.函数名.selector` 用于生成函数ABI编码、 代理合约、 call 方法用
  * 事件
    * 事件的参数分为索引参数和普通参数，索引参数用来给监听事件的客户端过滤用的，最多只能有三个，一般都是地址或者字符串什么的 `event Transfer(address indexed from, address indexed to, uint256 value);`
    * 适合使用的场景
@@ -102,7 +106,8 @@
      * value eth金额
      * gas 最大支持的gas费
      * salt CREATE2指令的盐值
-     * code CREATE2的指定合约字节码 
+     * code CREATE2的指定合约字节码
+   * 合约自己可以删除自己 `selfdestruct(_addr)`  _addr 是一个接收本合约余额的地址变量  selfdestruct需要看EIP版本，EIP-6780减少了SELFDESTRUCT操作码的功能，再调用会将合约余额转走，合约不删除
  * 合约调合约(不是合约调library合约)
    * 知道合约地址，用合约实例化后调用 `OtherContract(_Address).setX(x);`
    * 函数参数接收一个合约变量，直接调用合约变量的方法 `function callGetX(OtherContract _Address) external view returns(uint x) {  x = _Address.getX(); }`
