@@ -3,6 +3,7 @@
   * EIP:是针对以太坊底层协议的改进建议, 涉及区块链协议的更改、核心功能的优化或新增，比如共识机制、虚拟机（EVM）改动、Gas 规则调整等。
   * ERC: 针对智能合约标准化的提案，定义了 应用层标准，特别是 token 和合约的接口规范
   * 在以太坊中，数据必须编码成字节码才能和智能合约交互
+  * 可选择性import的内容有： 库、合约、接口、结构体、枚举， 其他不可以
 * remix:
   * 合约中定义了一个public 数组之后，部署的合约在调试时 array后面会有一个输入框，首先展示的蓝色属性按钮也是一个函数，是你定义public的getter方法； 其次对于数组来说需要你输入索引才能拿到值，而不是输出整个数组值；
   * 左上角填写以太币金额的输入框不是部署的时候给设置金额初始值，是你在转账操作的时候的msg.value
@@ -50,7 +51,7 @@
    * 也支持结构式赋值，区别是js用{} solidity用 ()
    * this 引用方法表示外部调用，会消耗更多的gas， 只有在模拟外部调用、调用payable方法的时候才用，合约内自己调自己只需要使用方法名即可
    * 函数参数可以显性的设置引用类型（无论长度是否可变的数组、结构体、mapping）变量的存储位置, 取值范围为storage(最费gas,存在链上) memory(存内存 可变) calldata(存内存 不可变)
-   * **函数签名**格式是 `函数名(参数类型1, 参数类型2, ...)`
+   * **函数签名**格式是 `函数名(参数类型1, 参数类型2, ...)` 注意：uint和int要写为uint256和int256
    * 函数选择器： `contract.函数名.selector` 用于生成函数ABI编码、 代理合约、 call 方法用
    * abi全局变量:
      * 生成abi: `abi.encode`  `abi.encodePacked` `abi.encodeWithSignature` `abi.encodeWithSelector` 均可生成函数的abi编码， 前两个用于编码函数的参数
@@ -61,6 +62,8 @@
        bytes memory callfuncData = abi.encodePacked(funcSelector, param);
        (bool success, bytes memory data) = contractAddr.call(callfuncData);
        ```
+     * 通过反编译不开源合约可以得到函数的`method id`，可以通过函数签名计算得到 `bytes4(keccak256("mint(address)"))` , 通过abi encodeWithSelector 可以调用这个函数 `bytes memory data = abi.encodeWithSelector(bytes4(0x533ba33a)); address(contract).staticcall(data);`
+     * abi.decode用于解码abi.encode生成的二进制编码，将它还原成原本的参数
  * 事件
    * 事件的参数分为索引参数和普通参数，索引参数用来给监听事件的客户端过滤用的，最多只能有三个，一般都是地址或者字符串什么的 `event Transfer(address indexed from, address indexed to, uint256 value);`
    * 适合使用的场景
@@ -102,7 +105,7 @@
      }
      ```
  * 库
-   * solidity 用库合约封装一些算法、函数， 专门有library 关键字修饰库合约 `library Strings`
+   * solidity 用库合约封装一些算法、函数， 专门有library 关键字修饰库合约 `library Strings`, **不能被继承**
    * solidity 本身没有包管理这个概念，需要把 library封装成单独的sol文件后，import进来。 如果用hardhat 就可以通过npm安装库合约包，然后再sol文件import
    * 使用库的方法：`using <Library> for <Type>`  表示把这个库应用于这个类型，之后这个类型的数据就有这个库的方法可以用了. 如果这个库有针对多个类型的方法，就多写几次using for 类型
    * 使用库的方法2： 直接 库.方法
@@ -118,8 +121,11 @@
      * salt CREATE2指令的盐值
      * code CREATE2的指定合约字节码
    * 合约自己可以删除自己 `selfdestruct(_addr)`  _addr 是一个接收本合约余额的地址变量  selfdestruct需要看EIP版本，EIP-6780减少了SELFDESTRUCT操作码的功能，再调用会将合约余额转走，合约不删除
+   * try-catch只能被用于external函数或创建合约时constructor（被视为external函数）的调用,格式 `try 合约名.函数名() returns?(returnType val) { // 成功操作 } catch {}`
+   * 
  * 合约调合约(不是合约调library合约)
    * 知道合约地址，用合约实例化后调用 `OtherContract(_Address).setX(x);`
+   * 可以import 一个合约，但是使用的时候需要 `ContractA a = new ContractA()`
    * 函数参数接收一个合约变量，直接调用合约变量的方法 `function callGetX(OtherContract _Address) external view returns(uint x) {  x = _Address.getX(); }`
    * 调用payable函数：`OtherContract(otherContract).setX{value: msg.value}(x);` x随便填
    * 用call 调合约方法： `合约地址.call{value: amount}(abi.encodeWithSignature(函数签名, 传给函数的参数));` 如果不涉及转账，就没有花括号及其内容；
