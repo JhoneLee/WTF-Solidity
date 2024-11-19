@@ -170,4 +170,9 @@
                revert CallFailed();
            }
        }
-       ``` 
+       ```
+   * 一堆demo
+     * 自己实现[ERC20代币](https://github.com/JhoneLee/WTF-Solidity/blob/main/31_ERC20/readme.md)以及[水龙头]([https://www.wtf.academy/docs/solidity-103/Faucet/](https://github.com/JhoneLee/WTF-Solidity/blob/main/32_Faucet/readme.md))
+     * [空投合约](https://github.com/JhoneLee/WTF-Solidity/blob/main/33_Airdrop/readme.md) 说白了就是利用循环搞批量转账
+     * 
+     * 
