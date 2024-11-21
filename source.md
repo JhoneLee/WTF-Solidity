@@ -207,6 +207,30 @@ const userRes = await contract.user();
       * 可以设置单独的合约记录每个用户的会员等级，这又是另外一个前端页面
     * 根据费率修改Maker 和 Faker的 tokens 记账本， 这里的msg.sender 就是买方
   * 触发交易事件
+ * 订单可交易量查询（views类型函数，节省gas）
+   * 校验订单有效性
+     * 订单用户是否和签名消息一致
+     * 订单是否在有效期内
+   * 计算剩余可交换额度，EtherDelta 采用了双重计算，直接做减法 和 用乘除法
+     ```solidity
+      uint256 available1 = SafeMath.sub(
+          orderSigned.amountGet,
+          orderFills[orderSigned.user][hash]
+      );
+      uint256 available2 = SafeMath.mul(
+          tokens[orderSigned.tokenGive][orderSigned.user],
+          orderSigned.amountGet
+      ) / orderSigned.amountGive;
+      if (available1 < available2) return available1;
+      return available2;
+      ```
+ * 订单已交换量查询
+   * 根据传递的订单签名消息获取订单hash
+   * 返回mapping中保存的订单用户下该订单hash的已兑换额度
+ * 取消订单
+   * 校验订单签名信息中的订单用户和msg.sender 是否一致，这里需要一致
+   * 把订单成交进度记账本直接拉成全额度，就算是取消订单了, 因为mapping不支持删除
+   * 触发取消订单事件
 
 
 
