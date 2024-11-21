@@ -18,6 +18,9 @@
 * 存入金额操作强调链上状态优先，即先转账成功我再改账本。 转出操作强调合约内部状态优先，改完账本再转账
   * 转出这么搞是因为我们转出需要调用第三方代币的transfer方法，而第三方transfer是不可信的， 它可以反调我们的转账方法，在没有改账本前多次转出代币，而账本只改一次， 这种就叫**重入攻击**
   * 转入这么搞是可以理解和转出的操作相反，即可保证合约状态的正常。
+* 过期标准：
+  * 区块高度标准： 在智能合约里订单有效性可以用区块链高度标记，如果一个订单的expires 设置为65536， 表示只要当前区块链高度在 65537 之内均可交易，否则作废； `block.number <= orderSigned.expires`
+  * 时间标准： 用户直观的还是想设置自己订单的过期时间，所以可以根据当前智能合约时间进行判断，时间单位是秒 `uint256 orderExpires = block.timestamp + 3600;  // 当前时间 + 1小时`
 
 ### 1.4 消息签名
 #### 1.4.1 ecrecover 函数
@@ -28,6 +31,72 @@
 * v int8: 签名恢复的标志位，通常为27 或 28
 * r bytes32: 签名第一部分
 * s bytes32: 签名第二部分
+
+```solidity
+function decode(OrderSigned memory orderSigned) public  {
+   // 自己对前端传递来的数据进行消息签名
+   bytes32 hash = keccak256(
+        abi.encodePacked(
+            address(this),
+            orderSigned.tokenGet,
+            orderSigned.amountGet,
+            orderSigned.tokenGive,
+            orderSigned.amountGive,
+            orderSigned.expires,
+            orderSigned.nonce
+        )
+    );
+    // 反解出消息的签名用户，这个用户就是前端签名时 wallet对象绑定的用户
+    user = ecrecover(
+        keccak256(
+            // 手动不上消息自动前缀
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+        ),
+        orderSigned.v, // v是位数27/28， r s是前端传过来的hash截取字符串
+        orderSigned.r,
+        orderSigned.s
+    );
+}
+```
+
+#### 1.4.2 ethers.js 对消息签名并适配EtherDelta
+* ethers.solidityPackedKeccak256
+* wallet.signMessage
+
+```js
+// 先求出hash， 传参就是 类型数组 实际取值数组
+const hash = ethers.solidityPackedKeccak256(
+    [
+      'address',
+      'address',
+      'uint256',
+      'address',
+      'uint256',
+      'uint256',
+      'uint256',
+    ],
+    [
+      contarctAddress,
+      tokenGet,
+      amountGet,
+      tokenGive,
+      amountGive,
+      expires,
+      nonce,
+    ]
+  );
+// 像智能合约里加前缀那样，给hash补上前缀
+const messageHashBytes = ethers.getBytes(hash);
+const signature = await wallet.signMessage(messageHashBytes);
+// 从签名中解析 r, s, 和 v
+const r = '0x' + signature.slice(2, 66); // 签名的前 32 字节 从2开始是因为前面有固定的0x, 取32为何截66 是因为签名是用2个十六进制表示一个字节
+const s = '0x' + signature.slice(66, 130); // 签名的中间 32 字节
+const v = parseInt(signature.slice(130, 132), 16); // 签名的最后 1 字节，转换为整数
+// 假设我的合约验签函数叫decode， 我把签名参数传递给智能合约
+const tx = await contract.decode(orderSigned);
+await tx.wait();
+const userRes = await contract.user();
+```
 
 #### 1.4.2 DEX app EtherDelta 的数据结构设计
 ```solidity
@@ -46,6 +115,10 @@
  }
 ```
 
+### 1.5 数学计算
+* 利用SafeMath进行基本运算，防止精度丢失
+* 如果有小数计算，先将小数转换成整型，计算完毕后再除去换乘整型的单位， 比如： `feeRebateXfer = SafeMath.mul(amount, feeRebate) / (1 ether);`
+* 避免除0
 
 
 
@@ -55,15 +128,25 @@
 
 ### 2.1 DEX App
 
-#### 2.1.0 状态定义
+#### 2.1.1 状态定义
 * 管理员地址，当操作需要只有管理员才能完成时，管理员地址会提供给校验权限修饰器对msg.sender进行比对
 * 收费账户， DEX app 不是做公益，要收手续费赚钱，放手续费的地方
 * 费率状态：一般设计为两头吃，对卖方收费费率， 对买方收费费率
 * 交易金记账本： 推荐数据结构为mapping ， key 为代币token,  value 为  mapping(用户地址， 金额)  记录某种币下各用户的金额
 * 订单签名验证记账本： 数据结构为mapping， key 为用户地址，value 为 mapping(订单号(一种经过特定计算的哈希值), 是否签名验证过)
-* 订单交易金额记账本： 数据结构为mapping, key 为用户地址， value 为 mapping(订单号， 订单金额)
+* 订单成交进度记账本： 数据结构为mapping, key 为用户地址， value 为 mapping(订单号， 订单当前金额) 记录当前用户订单中所需要的币兑换的进度，假设一个人要用chainLink换100个狗狗币，其他持有狗狗币的用户给他凑
+* 一些引用的外部合约地址，比如 用户等级计算 合约等
 
-#### 2.1.1 事件定义
+#### 2.1.2 数据设计
+* 订单消息签名数据：
+  * 用户想要交换买入的币种及币值
+  * 用户提供作为交换的币种及币值
+  * 签名的用户地址
+  * 订单过期时间
+  * 订单编号
+  
+
+#### 2.1.3 事件定义
 > 要突出业务上的关键操作， 用户的行为，包含足够的信息， 便于查询， 可以从以下角度去分析
 * 关键操作
   * 订单的操作： 挂单 取消订单 成交
@@ -77,10 +160,12 @@
   * 充值：和游戏等充值不同，用户可以提现
   * 提现
   * 账户变化
+  * 用户的等级： 普通用户 银卡用户 金卡用户等等，不同用户在费率上又优惠，每笔交易还有返佣
 * 事件包含信息： 从前端和外部工具角度，去暴露对应的数据
 * 巧妙利用最多3个indexed 事件索引， 提升查询效率
 
-#### 2.1.2 函数功能
+
+#### 2.1.4 函数功能
 * 初始化
   * 设置管理员地址
   * 设置各种交易收费费率
@@ -106,8 +191,20 @@
   * 调代币的transfer执行转出
   * 触发提现事件
 * 查询某个币下面某用户的额度， 直接返回记账本的映射即可
-* 交易操作：
+* 创建订单（Maker调用）：
+* 交易操作（Taker调用）：
   * 根据参数传入的用户签名对象，拿出特定的属性值进行hash操作，生成一个专属hash值作为订单的唯一标志
-  * 拿到上面的hash后，校验这个消息是否和发出消息的用户一致
+  * 拿到上面的hash后，校验这个消息是否和签名的用户一致， 这里前端用谁的钱包签名的用户就是谁，无法篡改
+  * 校验活动：
+    * 用户订单是否被记录在订单记账本上， 如果没有判断 当前订单签名信息是否和Maker 用户地址一致
+    * 
+    * 
   * 修改相关记账本
+    * 判断用户的会员等级，根据等级不同计算不同的费率
   * 触发交易事件
+
+
+
+## 3. 常用库及合约
+* @openzeppelin
+  * SafeMath 安全的数学运算，提供加减乘三种计算函数
